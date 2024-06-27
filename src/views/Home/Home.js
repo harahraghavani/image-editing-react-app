@@ -1,9 +1,14 @@
-import React from 'react'
+import { Box } from "@chakra-ui/react";
+import NavBar from "../../components/common/NavBar";
+import ImagesGrid from "../../components/ImagesGrid";
 
 const Home = () => {
-    return (
-        <div>Home</div>
-    )
-}
+  return (
+    <Box position="relative">
+      <NavBar />
+      <ImagesGrid />
+    </Box>
+  );
+};
 
-export default Home
+export default Home;
