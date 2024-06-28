@@ -16,9 +16,8 @@ import { useFirebase } from "../../hooks/firebase/useFirebase";
 const AddImageModal = ({ isOpen, onClose, file, setFile }) => {
   const fileInputRef = useRef(null);
   const { firebaseMethods, states } = useFirebase();
-  const { handleUploadImage } = firebaseMethods;
-  const { isImageUploading } = states;
-  console.log("isImageUploading: ", isImageUploading);
+  const { uploadImages } = firebaseMethods;
+  const { isUploading } = states;
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -54,6 +53,7 @@ const AddImageModal = ({ isOpen, onClose, file, setFile }) => {
             acceptType={IMAGE_TYPE}
             inputReference={fileInputRef}
             file={file}
+            disabled={isUploading}
           />
         </ModalBody>
         <ModalFooter>
@@ -61,11 +61,13 @@ const AddImageModal = ({ isOpen, onClose, file, setFile }) => {
             <Button
               transition={"all 0.3s ease"}
               onClick={() =>
-                handleUploadImage({
-                  imageData: file?.name,
-                  closeModal: () => onClose(),
+                uploadImages({
+                  img: file,
+                  closeUploadModal: () => onClose(),
                 })
               }
+              isDisabled={isUploading}
+              isLoading={isUploading}
             >
               Upload
             </Button>

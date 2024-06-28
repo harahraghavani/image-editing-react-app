@@ -5,33 +5,25 @@ import {
   SimpleGrid,
   useDisclosure,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { IoMdAdd } from "react-icons/io";
 import { useTheme } from "../hooks/theme/useTheme";
 import AddImageModal from "./modal/AddImageModal";
 import { useFirebase } from "../hooks/firebase/useFirebase";
+import Shimmer from "./common/Shimmer";
+import NoDataComponent from "./common/NoDataComponent";
 
 const ImagesGrid = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { selectedColor } = useTheme();
   const [file, setFile] = useState(null);
-  const [imageUrls, setImageUrls] = useState([]);
-  console.log("imageUrls: ", imageUrls);
-  const { firebaseMethods } = useFirebase();
-  const { fetchImages } = firebaseMethods;
 
+  const { states } = useFirebase();
+  const { loader, imagesData } = states;
   const handleClose = () => {
     setFile(null);
     onClose();
   };
-
-  useEffect(() => {
-    const loadImages = async () => {
-      const urls = await fetchImages();
-      setImageUrls(urls);
-    };
-    loadImages();
-  }, [fetchImages]);
 
   return (
     <>
@@ -41,19 +33,39 @@ const ImagesGrid = () => {
         height="calc(100svh - 75px)"
         transition={"all 0.3s ease"}
       >
-        <SimpleGrid columns={[2, null, 3]} spacing="40px" p="20px">
-          {imageUrls.map((url, index) => (
-            <Image
-              key={index}
-              src={url}
-              alt={`Image ${index + 1}`}
-              boxSize="200px"
-              objectFit="cover"
-            />
-          ))}
-        </SimpleGrid>
+        {loader ? (
+          <SimpleGrid columns={[1, 2, 3]} spacing="20px" p="20px" mx="auto">
+            <Shimmer height="350px" />
+            <Shimmer height="350px" />
+            <Shimmer height="350px" />
+            <Shimmer height="350px" />
+            <Shimmer height="350px" />
+            <Shimmer height="350px" />
+          </SimpleGrid>
+        ) : imagesData?.length <= 0 ? (
+          <NoDataComponent />
+        ) : (
+          <SimpleGrid columns={[1, 2, 3]} spacing="40px" p="20px">
+            {imagesData?.map((url, index) => (
+              <Box
+                rounded="xl"
+                key={index}
+                display="inline-flex"
+                justifyContent="center"
+              >
+                <Image
+                  src={url}
+                  alt={`Image ${Math.random()}`}
+                  height={"500"}
+                  objectFit={"cover"}
+                />
+              </Box>
+            ))}
+          </SimpleGrid>
+        )}
+
         <Box
-          position="absolute"
+          position="fixed"
           right="40px"
           bottom="40px"
           rounded="full"

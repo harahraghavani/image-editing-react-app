@@ -1,13 +1,14 @@
 import { Box } from "@chakra-ui/react";
-import NavBar from "../../components/common/NavBar";
 import ImagesGrid from "../../components/ImagesGrid";
+import Layout from "../../components/common/Layout";
 
 const Home = () => {
   return (
-    <Box position="relative">
-      <NavBar />
-      <ImagesGrid />
-    </Box>
+    <Layout>
+      <Box position="relative">
+        <ImagesGrid />
+      </Box>
+    </Layout>
   );
 };
 

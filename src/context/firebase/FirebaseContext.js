@@ -16,6 +16,7 @@ import MY_APP from "../../firebase/config/index";
 import { useToast } from "@chakra-ui/react";
 import { createCookie, getCookie } from "../../utility/utils";
 import { useNavigate } from "react-router-dom";
+import { v4 } from "uuid";
 
 const FirebaseContext = createContext();
 
@@ -23,11 +24,16 @@ const FirebaseProvider = ({ children }) => {
   const auth = getAuth(MY_APP);
   const googleProvider = new GoogleAuthProvider();
   const storage = getStorage(MY_APP);
+  const imageListRef = ref(storage, "images/");
 
   // states
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [isImageUploading, setIsImageUploading] = useState(false);
+
+  // upload and get images
+  const [imagesData, setImagesData] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [loader, setLoader] = useState(false);
 
   // hooks
   const toast = useToast();
@@ -69,56 +75,82 @@ const FirebaseProvider = ({ children }) => {
     });
   };
 
-  const handleUploadImage = async ({ imageData, closeModal }) => {
-    setIsImageUploading(true);
-    const imageRef = ref(storage, `images/${imageData}`);
-    await uploadBytes(imageRef, imageData)
-      .then(() => {
-        setIsImageUploading(false);
-        closeModal();
-      })
-      .catch((error) => {
-        setIsImageUploading(false);
-        toast({
-          title: error.message,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-          position: "top-right",
+  const uploadImages = ({ img, closeUploadModal }) => {
+    try {
+      setIsUploading(true);
+      const imgRef = ref(storage, `images/${img.name + v4()}`);
+      uploadBytes(imgRef, img)
+        .then((snapshot) => {
+          setIsUploading(false);
+          toast({
+            title: "Image uploaded successfully",
+            status: "success",
+            duration: 5000,
+            isClosable: true,
+            position: "top-right",
+          });
+          closeUploadModal();
+          getDownloadURL(snapshot.ref).then((url) => {
+            setImagesData((prev) => [...prev, url]);
+          });
+        })
+        .catch((error) => {
+          setIsUploading(false);
+          toast({
+            title: error.message,
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+            position: "top-right",
+          });
+          closeUploadModal();
+        })
+        .finally(() => {
+          setIsUploading(false);
+          closeUploadModal();
         });
-        closeModal();
-      })
-      .finally(() => {
-        setIsImageUploading(false);
-        closeModal();
-      });
-    setIsImageUploading(false);
+    } catch (error) {
+      setIsUploading(false);
+      closeUploadModal();
+    }
   };
 
-  const fetchImages = async () => {
-    const imagesListRef = ref(storage, "images/");
-    const imageRefs = await listAll(imagesListRef);
-    const imageUrls = await Promise.all(
-      imageRefs.items.map((itemRef) => getDownloadURL(itemRef))
-    );
-    return imageUrls;
+  const getAllImages = () => {
+    setLoader(true);
+    listAll(imageListRef)
+      .then((response) => {
+        response?.items?.forEach((ele) => {
+          getDownloadURL(ele).then((url) => {
+            setImagesData((prev) => [...prev, url]);
+            setLoader(false);
+          });
+        });
+      })
+      .catch(() => {
+        setLoader(false);
+      })
+      .finally(() => {
+        setLoader(false);
+      });
   };
 
   useEffect(() => {
     isUserExist();
+    getAllImages();
     // eslint-disable-next-line
   }, []);
 
   const values = {
     firebaseMethods: {
       signUpWithGoogle,
-      handleUploadImage,
-      fetchImages,
+      uploadImages,
     },
     states: {
       isLoading,
       user,
-      isImageUploading,
+      isUploading,
+      loader,
+      imagesData,
     },
     accessToken,
   };

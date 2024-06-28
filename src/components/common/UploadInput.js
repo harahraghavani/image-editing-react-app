@@ -14,6 +14,7 @@ const UploadInput = ({
   maxAllowedFiles = 1,
   inputReference,
   file,
+  disabled,
 }) => {
   const { selectedColor } = useTheme();
   const { colorMode } = useColorMode();
@@ -46,6 +47,7 @@ const UploadInput = ({
           inputReference = node;
         }}
         style={{ display: "none" }}
+        disabled={disabled}
       />
       <Input
         onClick={() => inputReference.click()}
@@ -58,6 +60,7 @@ const UploadInput = ({
         border={borderColor}
         backgroundColor={color}
         variant={file ? "filled" : "outline"}
+        disabled={disabled}
       />
     </InputGroup>
   );
