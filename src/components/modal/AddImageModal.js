@@ -12,9 +12,11 @@ import UploadInput from "../common/UploadInput";
 import { useRef } from "react";
 import { IMAGE_TYPE } from "../../constant/regex";
 import { useFirebase } from "../../hooks/firebase/useFirebase";
+import { useTheme } from "../../hooks/theme/useTheme";
 
 const AddImageModal = ({ isOpen, onClose, file, setFile }) => {
   const fileInputRef = useRef(null);
+  const { selectedColor } = useTheme();
   const { firebaseMethods, states } = useFirebase();
   const { uploadImages } = firebaseMethods;
   const { isUploading } = states;
@@ -40,12 +42,17 @@ const AddImageModal = ({ isOpen, onClose, file, setFile }) => {
       }}
       isCentered
       motionPreset="scale"
-      size="sm"
+      size={{
+        base: "xs",
+        sm: "sm",
+        md: "md",
+        lg: "lg",
+      }}
     >
       <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(10px)" />
       <ModalContent>
         <ModalHeader>Add Image</ModalHeader>
-        <ModalCloseButton />
+        <ModalCloseButton isDisabled={isUploading} />
         <ModalBody>
           <UploadInput
             type="file"
@@ -60,14 +67,16 @@ const AddImageModal = ({ isOpen, onClose, file, setFile }) => {
           {file && (
             <Button
               transition={"all 0.3s ease"}
-              onClick={() =>
+              onClick={() => {
                 uploadImages({
                   img: file,
                   closeUploadModal: () => onClose(),
-                })
-              }
+                });
+              }}
               isDisabled={isUploading}
               isLoading={isUploading}
+              colorScheme={selectedColor !== null ? selectedColor : "gray"}
+              variant="outline"
             >
               Upload
             </Button>

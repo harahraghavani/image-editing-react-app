@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Flex,
   Heading,
   useColorMode,
@@ -7,19 +8,23 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 import { CiDark, CiLight } from "react-icons/ci";
-import { IoMdSettings } from "react-icons/io";
+import { IoMdSettings, IoIosLogOut } from "react-icons/io";
 import CommonDrawer from "./CommonDrawer";
+import { useFirebase } from "../../hooks/firebase/useFirebase";
 
 const NavBar = () => {
   const { colorMode, toggleColorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navbarRef = useRef(null);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const { firebaseMethods } = useFirebase();
+  const { logoutUser } = firebaseMethods;
 
   useEffect(() => {
     let prevScrollpos = window.pageYOffset;
 
     const handleScroll = () => {
+      if (!navbarRef.current) return;
       const currentScrollPos = window.pageYOffset;
       if (prevScrollpos > currentScrollPos) {
         navbarRef.current.style.top = "0";
@@ -49,6 +54,7 @@ const NavBar = () => {
 
   useEffect(() => {
     if (hasScrolled) {
+      if (!navbarRef.current) return;
       navbarRef.current.style.boxShadow = "rgba(57, 63, 72, 0.4) 0px 2px 5px";
       navbarRef.current.style.backgroundColor =
         colorMode === "light" ? "#FFFFFF" : "#1A202C";
@@ -77,6 +83,9 @@ const NavBar = () => {
               <CiLight size={35} />
             )}
           </Box>
+          <Button leftIcon={<IoIosLogOut />} onClick={logoutUser}>
+            Logout
+          </Button>
         </Flex>
       </Flex>
       <CommonDrawer isOpen={isOpen} onClose={onClose} />

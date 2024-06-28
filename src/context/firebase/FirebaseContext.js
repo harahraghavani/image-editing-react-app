@@ -4,19 +4,26 @@ import {
   getAuth,
   onAuthStateChanged,
   signInWithPopup,
+  signOut,
 } from "firebase/auth";
-import {
-  getDownloadURL,
-  getStorage,
-  listAll,
-  ref,
-  uploadBytes,
-} from "firebase/storage";
+import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import MY_APP from "../../firebase/config/index";
 import { useToast } from "@chakra-ui/react";
-import { createCookie, getCookie } from "../../utility/utils";
+import {
+  getDataFromLocalStorage,
+  removeDataFromLocalStorage,
+  setDataToLocalStorage,
+} from "../../utility/utils";
 import { useNavigate } from "react-router-dom";
 import { v4 } from "uuid";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  getFirestore,
+  query,
+  where,
+} from "firebase/firestore";
 
 const FirebaseContext = createContext();
 
@@ -24,7 +31,7 @@ const FirebaseProvider = ({ children }) => {
   const auth = getAuth(MY_APP);
   const googleProvider = new GoogleAuthProvider();
   const storage = getStorage(MY_APP);
-  const imageListRef = ref(storage, "images/");
+  const db = getFirestore(MY_APP);
 
   // states
   const [isLoading, setIsLoading] = useState(false);
@@ -32,6 +39,7 @@ const FirebaseProvider = ({ children }) => {
 
   // upload and get images
   const [imagesData, setImagesData] = useState([]);
+
   const [isUploading, setIsUploading] = useState(false);
   const [loader, setLoader] = useState(false);
 
@@ -40,13 +48,15 @@ const FirebaseProvider = ({ children }) => {
   const navigate = useNavigate();
 
   // cookies data
-  const accessToken = getCookie("Access Token");
+  const accessToken = getDataFromLocalStorage("Access Token");
+  const userData = getDataFromLocalStorage("User Data");
 
   const signUpWithGoogle = async () => {
     setIsLoading(true);
     await signInWithPopup(auth, googleProvider)
       .then((result) => {
-        createCookie("Access Token", result?.user?.accessToken);
+        setDataToLocalStorage("Access Token", result?.user?.accessToken);
+        setDataToLocalStorage("User Data", result?.user);
         setIsLoading(false);
         navigate("/");
       })
@@ -75,68 +85,123 @@ const FirebaseProvider = ({ children }) => {
     });
   };
 
-  const uploadImages = ({ img, closeUploadModal }) => {
+  const uploadFile = async ({ file }) => {
+    const storageRef = ref(storage);
+    const fileRef = ref(storageRef, `images/${file.name + v4()}`);
+    const snapshot = await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(snapshot.ref);
+    return url;
+  };
+
+  const uploadImages = async ({ img, closeUploadModal }) => {
+    setIsUploading(true);
+    const url = await uploadFile({ file: img });
     try {
-      setIsUploading(true);
-      const imgRef = ref(storage, `images/${img.name + v4()}`);
-      uploadBytes(imgRef, img)
-        .then((snapshot) => {
-          setIsUploading(false);
-          toast({
-            title: "Image uploaded successfully",
-            status: "success",
-            duration: 5000,
-            isClosable: true,
-            position: "top-right",
-          });
-          closeUploadModal();
-          getDownloadURL(snapshot.ref).then((url) => {
-            setImagesData((prev) => [...prev, url]);
-          });
-        })
-        .catch((error) => {
-          setIsUploading(false);
-          toast({
-            title: error.message,
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-            position: "top-right",
-          });
-          closeUploadModal();
-        })
-        .finally(() => {
-          setIsUploading(false);
-          closeUploadModal();
-        });
+      await addDoc(collection(db, "images", user?.email, "images"), {
+        email: user?.email,
+        url,
+      });
+      const querySnapshot = await getDocs(
+        collection(db, "images", user?.email, "images")
+      );
+      let data = [];
+      querySnapshot.forEach((doc) => {
+        data.push(doc.data());
+      });
+      data.filter((item) => item.email === user?.email);
+
+      setImagesData(data);
+      setIsUploading(false);
+      closeUploadModal();
+      toast({
+        title: "Image uploaded successfully",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+        position: "top-right",
+      });
     } catch (error) {
+      toast({
+        title: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "top-right",
+      });
+    } finally {
       setIsUploading(false);
       closeUploadModal();
     }
   };
 
-  const getAllImages = () => {
+  const getAllImages = async () => {
+    if (!userData) {
+      return;
+    }
     setLoader(true);
-    listAll(imageListRef)
-      .then((response) => {
-        response?.items?.forEach((ele) => {
-          getDownloadURL(ele).then((url) => {
-            setImagesData((prev) => [...prev, url]);
-            setLoader(false);
-          });
+    try {
+      const q = query(
+        collection(db, "images", userData?.email, "images"),
+        where("email", "==", userData?.email)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        setImagesData([]); // Update the state to reflect no images found
+        setLoader(false);
+        return;
+      }
+
+      const urls = [];
+      querySnapshot.forEach((doc) => {
+        urls.push(doc.data());
+      });
+      setImagesData(urls);
+    } catch (error) {
+      toast({
+        title: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "top-right",
+      });
+    } finally {
+      setLoader(false);
+    }
+  };
+
+  const logoutUser = () => {
+    signOut(auth)
+      .then(() => {
+        setUser(null);
+        toast({
+          title: "Logged out successfully",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+          position: "top-right",
+        });
+        navigate("/login");
+        removeDataFromLocalStorage("Access Token");
+        removeDataFromLocalStorage("User Data");
+      })
+      .catch((error) => {
+        toast({
+          title: error.message,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+          position: "top-right",
         });
       })
-      .catch(() => {
-        setLoader(false);
-      })
-      .finally(() => {
-        setLoader(false);
-      });
+      .finally(() => {});
+    removeDataFromLocalStorage("Access Token");
+    removeDataFromLocalStorage("User Data");
   };
 
   useEffect(() => {
     isUserExist();
-    getAllImages();
     // eslint-disable-next-line
   }, []);
 
@@ -144,6 +209,8 @@ const FirebaseProvider = ({ children }) => {
     firebaseMethods: {
       signUpWithGoogle,
       uploadImages,
+      getAllImages,
+      logoutUser,
     },
     states: {
       isLoading,

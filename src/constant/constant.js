@@ -32,3 +32,5 @@ export const Colors = [
     name: "pink",
   },
 ];
+
+export const ENCRYPTION_KEY = "faufghfdoguosdgiodlbosgosdu";

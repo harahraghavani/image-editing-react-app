@@ -5,12 +5,12 @@ import { initializeApp } from "firebase/app";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBKFqi2so0eQxZVQpxUgvSy4z-cxn1tQ-8",
-  authDomain: "image-editing-react-app.firebaseapp.com",
-  projectId: "image-editing-react-app",
-  storageBucket: "image-editing-react-app.appspot.com",
-  messagingSenderId: "393939931784",
-  appId: "1:393939931784:web:ba32913339a85fec64c53d",
+  apiKey: "AIzaSyB-1VckXwnEVUvQSsNcdWCx7-rFPoCKa44",
+  authDomain: "image-editing-app-5ab4f.firebaseapp.com",
+  projectId: "image-editing-app-5ab4f",
+  storageBucket: "image-editing-app-5ab4f.appspot.com",
+  messagingSenderId: "1070716239414",
+  appId: "1:1070716239414:web:c687b2783f034726fa2297",
 };
 
 // Initialize Firebase
