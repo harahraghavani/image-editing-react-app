@@ -6,6 +6,7 @@ import { Suspense, lazy } from "react";
 // pages
 const AuthPage = lazy(() => import("./views/authentication/Auth"));
 const HomePage = lazy(() => import("./views/Home/Home"));
+const EditPage = lazy(() => import("./views/Edit/Edit"));
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/*" element={<HomePage />} />
+            <Route path="/image/edit/:id" element={<EditPage />} />
           </Route>
         </Routes>
       </Suspense>

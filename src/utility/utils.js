@@ -29,3 +29,69 @@ export const getDataFromLocalStorage = (key) => {
 export const removeDataFromLocalStorage = (key) => {
   localStorage.removeItem(key);
 };
+
+export const getFilterString = (filters) => {
+  let filterString = "";
+
+  for (const filterName in filters) {
+    const { filterName: name, value, unit } = filters[filterName];
+    if (value !== 0) {
+      filterString += `${name}(${value}${unit}) `;
+    }
+  }
+
+  return filterString.trim();
+};
+
+export const getDefaultValue = () => {
+  return {
+    brightness: {
+      filterName: "brightness",
+      displayName: "Brightness",
+      value: 100,
+      unit: "%",
+      min: 0,
+      max: 200,
+    },
+    contrast: {
+      filterName: "contrast",
+      displayName: "Contrast",
+      value: 100,
+      unit: "%",
+      min: 0,
+      max: 200,
+    },
+    grayscale: {
+      filterName: "grayscale",
+      displayName: "Black & White",
+      value: 0,
+      unit: "%",
+      min: 0,
+      max: 100,
+    },
+    hue: {
+      filterName: "hue-rotate",
+      displayName: "Hue",
+      value: 0,
+      unit: "deg",
+      min: 0,
+      max: 360,
+    },
+    saturation: {
+      filterName: "saturate",
+      displayName: "Saturation",
+      value: 100,
+      unit: "%",
+      min: 0,
+      max: 200,
+    },
+    sepia: {
+      filterName: "sepia",
+      displayName: "Warm",
+      value: 0,
+      unit: "%",
+      min: 0,
+      max: 100,
+    },
+  };
+};

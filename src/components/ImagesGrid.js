@@ -14,8 +14,11 @@ import Shimmer from "./common/Shimmer";
 import NoDataComponent from "./common/NoDataComponent";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
+import { useNavigate } from "react-router-dom";
 
 const ImagesGrid = () => {
+  // REACT ROUTER
+  const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { selectedColor } = useTheme();
   const [file, setFile] = useState(null);
@@ -27,6 +30,7 @@ const ImagesGrid = () => {
   const handleClose = () => {
     setFile(null);
     onClose();
+    getAllImages();
   };
 
   useEffect(() => {
@@ -68,7 +72,9 @@ const ImagesGrid = () => {
                       key={index}
                       src={data?.url}
                       alt={`Image ${Math.random()}`}
-                      // objectFit={"cover"}
+                      onClick={() => {
+                        navigate(`/image/edit/${data?.id}`);
+                      }}
                     />
                   );
                 })}

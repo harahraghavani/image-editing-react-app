@@ -11,6 +11,7 @@ import MY_APP from "../../firebase/config/index";
 import { useToast } from "@chakra-ui/react";
 import {
   getDataFromLocalStorage,
+  getDefaultValue,
   removeDataFromLocalStorage,
   setDataToLocalStorage,
 } from "../../utility/utils";
@@ -19,35 +20,43 @@ import { v4 } from "uuid";
 import {
   addDoc,
   collection,
+  doc,
+  getDoc,
   getDocs,
   getFirestore,
+  orderBy,
   query,
+  setDoc,
   where,
 } from "firebase/firestore";
 
 const FirebaseContext = createContext();
 
 const FirebaseProvider = ({ children }) => {
+  // FIREBASE
   const auth = getAuth(MY_APP);
   const googleProvider = new GoogleAuthProvider();
   const storage = getStorage(MY_APP);
   const db = getFirestore(MY_APP);
 
-  // states
-  const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState(null);
-
-  // upload and get images
-  const [imagesData, setImagesData] = useState([]);
-
-  const [isUploading, setIsUploading] = useState(false);
-  const [loader, setLoader] = useState(false);
+  // DEFAULT VALUES
+  const filters = getDefaultValue();
 
   // hooks
   const toast = useToast();
+
+  // REACT ROUTER
   const navigate = useNavigate();
 
-  // cookies data
+  // states
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [imagesData, setImagesData] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [loader, setLoader] = useState(false);
+  const [image, setImage] = useState(null);
+
+  // LOACL STORAGE
   const accessToken = getDataFromLocalStorage("Access Token");
   const userData = getDataFromLocalStorage("User Data");
 
@@ -98,8 +107,16 @@ const FirebaseProvider = ({ children }) => {
     const url = await uploadFile({ file: img });
     try {
       await addDoc(collection(db, "images", user?.email, "images"), {
+        name: img.name,
         email: user?.email,
         url,
+        type: img.type,
+        brightness: filters.brightness.value,
+        contrast: filters.contrast.value,
+        grayscale: filters.grayscale.value,
+        hue: filters.hue.value,
+        saturation: filters.saturation.value,
+        sepia: filters.sepia.value,
       });
       const querySnapshot = await getDocs(
         collection(db, "images", user?.email, "images")
@@ -109,7 +126,6 @@ const FirebaseProvider = ({ children }) => {
         data.push(doc.data());
       });
       data.filter((item) => item.email === user?.email);
-
       setImagesData(data);
       setIsUploading(false);
       closeUploadModal();
@@ -155,7 +171,7 @@ const FirebaseProvider = ({ children }) => {
 
       const urls = [];
       querySnapshot.forEach((doc) => {
-        urls.push(doc.data());
+        urls.push({ id: doc.id, ...doc.data() });
       });
       setImagesData(urls);
     } catch (error) {
@@ -168,6 +184,37 @@ const FirebaseProvider = ({ children }) => {
       });
     } finally {
       setLoader(false);
+    }
+  };
+
+  const getDataBasedOnId = async ({ id }) => {
+    const docRef = doc(db, "images", userData?.email, "images", id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      setImage(docSnap.data());
+    }
+  };
+
+  const updateImageData = async ({ id, updatedData }) => {
+    try {
+      const docRef = doc(db, "images", user?.email, "images", id);
+      await setDoc(docRef, { ...updatedData }, { merge: true });
+
+      // Update local state if necessary
+      setImagesData((prevData) =>
+        prevData.map((item) =>
+          item.id === id ? { ...item, ...updatedData } : item
+        )
+      );
+    } catch (error) {
+      console.log("error: ", error);
+      toast({
+        title: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "top-right",
+      });
     }
   };
 
@@ -211,6 +258,8 @@ const FirebaseProvider = ({ children }) => {
       uploadImages,
       getAllImages,
       logoutUser,
+      getDataBasedOnId,
+      updateImageData,
     },
     states: {
       isLoading,
@@ -218,6 +267,8 @@ const FirebaseProvider = ({ children }) => {
       isUploading,
       loader,
       imagesData,
+      image,
+      setImage,
     },
     accessToken,
   };
