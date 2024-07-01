@@ -4,10 +4,12 @@ import { Box, Grid, GridItem, Flex } from "@chakra-ui/react";
 
 const EditImgComponent = () => {
   const { jsxComponents } = useEditImage();
-  const { canvasComponent, rangeInputComponents } = jsxComponents;
+  const { canvasComponent, rangeInputComponents, editImageHeader } =
+    jsxComponents;
 
   return (
     <Box>
+      {editImageHeader()}
       <Grid
         templateColumns={{
           base: "repeat(1, 1fr)",

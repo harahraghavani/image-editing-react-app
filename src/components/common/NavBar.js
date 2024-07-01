@@ -66,7 +66,7 @@ const NavBar = () => {
       position="fixed"
       w="100%"
       ref={navbarRef}
-      transition={"all 0.3s ease"}
+      transition={"all 0.3s ease-in-out"}
       zIndex={999}
       top={0}
     >
