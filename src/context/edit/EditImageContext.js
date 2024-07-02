@@ -1,5 +1,5 @@
 import { createContext, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useFirebase } from "../../hooks/firebase/useFirebase";
 import {
   Box,
@@ -7,6 +7,7 @@ import {
   Flex,
   Heading,
   IconButton,
+  Toast,
   useColorMode,
   useDisclosure,
 } from "@chakra-ui/react";
@@ -19,14 +20,18 @@ import { MdDeleteForever } from "react-icons/md";
 import { HiRefresh } from "react-icons/hi";
 import CommonDrawer from "../../components/common/CommonDrawer";
 import { IoMdSettings } from "react-icons/io";
+import { IoReturnDownBack } from "react-icons/io5";
+import htmlToImage, { toBlob, toJpeg } from "html-to-image";
+import FileSaver from "file-saver";
 
 const EditImageContext = createContext();
 
 const EditImageProvider = ({ children }) => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { colorMode, toggleColorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const navbarRef = useRef(null);
+  const headerRef = useRef(null);
   const [hasScrolled, setHasScrolled] = useState(false);
   const { selectedColor } = useTheme();
 
@@ -76,11 +81,19 @@ const EditImageProvider = ({ children }) => {
     applyFilterChanges();
   };
 
+  const toBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+      reader.onerror = reject;
+    });
+
   const editImageHeader = () => {
     return (
       <Box
         w="100%"
-        ref={navbarRef}
+        ref={headerRef}
         transition={"all 0.3s ease-in-out"}
         zIndex={999}
         top={0}
@@ -132,12 +145,19 @@ const EditImageProvider = ({ children }) => {
             </Box>
           </Flex>
           <Flex gap={4} alignItems={"center"}>
-            <Button>Back</Button>
+            <Button
+              variant="outline"
+              leftIcon={<IoReturnDownBack />}
+              colorScheme={selectedColor !== null ? selectedColor : "gray"}
+              onClick={() => navigate("/")}
+            >
+              Back
+            </Button>
             <IconButton
               colorScheme={selectedColor !== null ? selectedColor : "gray"}
               aria-label="donwload image"
               icon={<FaCloudDownloadAlt />}
-              onClick={() => {}}
+              onClick={downloadImage}
             />
             <IconButton
               colorScheme={selectedColor !== null ? selectedColor : "gray"}
@@ -156,6 +176,17 @@ const EditImageProvider = ({ children }) => {
         <CommonDrawer isOpen={isOpen} onClose={onClose} />
       </Box>
     );
+  };
+
+  const downloadImage = async () => {
+    const canvas = canvasRef?.current;
+    toBlob(canvas).then(function (blob) {
+      if (window.saveAs) {
+        window.saveAs(blob, "my-node.png");
+      } else {
+        FileSaver.saveAs(blob, "my-node.png");
+      }
+    });
   };
 
   const rangeInputComponents = () => {
@@ -272,6 +303,7 @@ const EditImageProvider = ({ children }) => {
 
       const newImage = new Image();
       newImage.src = url;
+      // newImage.crossOrigin = "anonymous";
       newImage.onload = () => {
         canvas.width = newImage.width;
         canvas.height = newImage.height;
@@ -312,29 +344,29 @@ const EditImageProvider = ({ children }) => {
     let prevScrollpos = window.pageYOffset;
 
     const handleScroll = () => {
-      if (!navbarRef.current) return;
+      if (!headerRef.current) return;
       const currentScrollPos = window.pageYOffset;
 
       if (prevScrollpos > currentScrollPos) {
-        navbarRef.current.style.top = "0";
+        headerRef.current.style.top = "0";
         if (currentScrollPos > 0) {
-          navbarRef.current.style.boxShadow =
+          headerRef.current.style.boxShadow =
             "rgba(57, 63, 72, 0.4) 0px 2px 5px";
-          navbarRef.current.style.backgroundColor =
+          headerRef.current.style.backgroundColor =
             colorMode === "light" ? "#FFFFFF" : "#1A202C";
           if (windowWidth < 768) {
-            navbarRef.current.style.position = "sticky";
+            headerRef.current.style.position = "sticky";
           }
         } else {
-          navbarRef.current.style.boxShadow = "none";
-          navbarRef.current.style.backgroundColor = "transparent";
+          headerRef.current.style.boxShadow = "none";
+          headerRef.current.style.backgroundColor = "transparent";
           if (windowWidth < 768) {
-            navbarRef.current.style.position = "initial";
+            headerRef.current.style.position = "initial";
           }
           setHasScrolled(false);
         }
       } else {
-        navbarRef.current.style.top = "-70px";
+        headerRef.current.style.top = "-70px";
         setHasScrolled(true);
       }
       prevScrollpos = currentScrollPos;
@@ -345,13 +377,13 @@ const EditImageProvider = ({ children }) => {
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [windowWidth]);
+  }, [windowWidth, colorMode]);
 
   useEffect(() => {
     if (hasScrolled) {
-      if (!navbarRef.current) return;
-      navbarRef.current.style.boxShadow = "rgba(57, 63, 72, 0.4) 0px 2px 5px";
-      navbarRef.current.style.backgroundColor =
+      if (!headerRef.current) return;
+      headerRef.current.style.boxShadow = "rgba(57, 63, 72, 0.4) 0px 2px 5px";
+      headerRef.current.style.backgroundColor =
         colorMode === "light" ? "#FFFFFF" : "#1A202C";
     }
   }, [hasScrolled, colorMode]);
